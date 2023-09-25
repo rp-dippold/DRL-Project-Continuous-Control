@@ -161,3 +161,5 @@ cython_debug/
 
 Continuous_Control.ipynb
 Crawler.ipynb
+unity-environment.log
+./archive/*
