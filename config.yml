@@ -1,0 +1,40 @@
+# File path to the reacher environment
+reacher_env: "./Reacher_Linux_20/Reacher.x86_64"
+# Maximum number of training episodes
+n_episodes: 1000
+# Maximum number of timesteps per episode
+max_timesteps: 1000
+# Size of the replay buffer
+buffer_size: 100000
+# Minibatch size for training
+batch_size: 128
+# Update (learn) the model parameters after every n steps
+update_every: 20
+# Number of times to update the networks 
+network_update: 10
+# Discount rate
+gamma: 0.95
+# Soft update of target network parameters
+tau: 1.0E-3
+# Learning rate of the actor
+lr_actor: 1.0E-3
+# Learnig rate of the critic
+lr_critic: 1.0E-3
+# L2 weight decay
+weight_decay: 0.0
+# Preferred device (GPU or CPU)
+device: GPU
+# Random seed
+random_seed: 42
+# Ornstein-Uhlenbeck mu
+ou_mu: 0.0
+# Ornstein-Uhlenbeck theta
+ou_theta: 0.15
+# Ornstein-Uhlenbeck sigma
+ou_sigma: 0.08
+# Desired average reward
+total_avg_reward: 30.0
+# Number of episodes for average reward
+scores_window: 100
+# Add noise to actions
+add_noise: True
