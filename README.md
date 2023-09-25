@@ -48,7 +48,7 @@ The project is structured as follows:
  ┣ ddpg_agent.py **`(Unity agent for reacher environment)`**<br> 
  ┣ main.py **`(Python script to run a trained agent or to train a new one)`**<br>
  ┣ model.py **`(Actor and Critic networks)`**<br>
- ┣ reacher.gif 
+ ┣ reacher.gif <br>
  ┣ README.md <br>
  ┗ Report.md <br>
  
