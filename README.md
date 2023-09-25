@@ -94,9 +94,9 @@ The filenames are: `checkpoint_actor.pth` and `checkpoint_critic.pth`.
 
 #### Running the Environment with a Smart Agent
 Depending on whether you want see the actions of a trained model in a one-agent or twenty-agent environment set the 
-reacher_env variable in config.yml accordingly (see above). The following command runs the environment:
+`reacher_env` variable in `config.yml` accordingly (see above). The following command runs the environment:
 
-`python main.py run --actor_params <path to stored actor weights> --critic_params <path to the stored critic weights>`
+`python main.py run --actor_params <path to stored actor weights> --critic_params <path to stored critic weights>`
 
 `<path to stored xxx weights>` is the path to the directory plus the name of the `checkpoint_xxx.pth` file, e.g.
 `./models/checkpoint_actor.pth`.
