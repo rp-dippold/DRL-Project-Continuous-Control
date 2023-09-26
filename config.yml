@@ -36,5 +36,3 @@ ou_sigma: 0.08
 total_avg_reward: 30.0
 # Number of episodes for average reward
 scores_window: 100
-# Add noise to actions
-add_noise: True

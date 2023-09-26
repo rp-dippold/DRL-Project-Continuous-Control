@@ -13,13 +13,17 @@ import torch.optim as optim
 class Agent():
     """Interacts with and learns from the environment."""
     
-    def __init__(self, state_size, action_size):
+    def __init__(self, state_size, action_size, add_noise):
         """Initialize an Agent object.
         
-        Params
-        ======
-            state_size (int): dimension of each state
-            action_size (int): dimension of each action
+        Parameters
+        ----------
+        state_size : int
+            Dimension of each state
+        action_size : int
+            Dimension of each action
+        add_noise : boolean
+            Add noise to actions for exploration
         """
         config = Config.get_config()
         self.state_size = state_size
@@ -30,7 +34,8 @@ class Agent():
         self.gamma = config.gamma
         self.update_every = config.update_every
         self.network_update = config.network_update
-        self.seed = random.seed(config.random_seed)
+        self.seed = np.random.seed(config.random_seed)
+        self.add_noise = add_noise
         if config.device == 'GPU' and torch.cuda.is_available():
             self.device = 'cuda:0'
         else:
@@ -56,7 +61,8 @@ class Agent():
                                            weight_decay=config.weight_decay)
 
         # Noise process
-        self.noise = OUNoise(action_size, config.random_seed)
+        if self.add_noise:
+            self.noise = OUNoise(action_size, config.random_seed)
 
         # Replay memory
         self.memory = ReplayBuffer(action_size, self.buffer_size,
@@ -65,12 +71,14 @@ class Agent():
 
 
     def step(self, state, action, reward, next_state, done):
-        """Save experience in replay memory, and use random sample from buffer to learn."""
+        """Save experience in replay memory, and use random sample from buffer 
+           to learn.
+        """
         # Save experience / reward
         self.memory.add(state, action, reward, next_state, done)
 
         # Learn after every UPDATE_EVERY time steps and if enough samples 
-        # are availabel in memory
+        # are available in memory
         self.t_step = (self.t_step + 1) % self.update_every
         if self.t_step == 0 and len(self.memory) > self.batch_size:
             # update the network NETWORK_UPDATE times
@@ -79,32 +87,35 @@ class Agent():
                 self.learn(experiences)
 
 
-    def act(self, state, add_noise=True):
+    def act(self, state):
         """Returns actions for given state as per current policy."""
         state = torch.from_numpy(state).float().to(self.device)
         self.actor_local.eval()
         with torch.no_grad():
             action = self.actor_local(state).cpu().data.numpy()
         self.actor_local.train()
-        if add_noise:
+        if self.add_noise:
             action += self.noise.sample()
         return np.clip(action, -1, 1)
 
 
     def reset(self):
+        """Rest noise object."""
         self.noise.reset()
 
 
     def learn(self, experiences):
-        """Update policy and value parameters using given batch of experience tuples.
+        """Update policy and value parameters using given batch of experience
+        tuples.
         Q_targets = r + γ * critic_target(next_state, actor_target(next_state))
         where:
             actor_target(state) -> action
             critic_target(state, action) -> Q-value
 
-        Params
-        ======
-            experiences (Tuple[torch.Tensor]): tuple of (s, a, r, s', done) tuples 
+        Parameters
+        ----------
+        experiences : (Tuple[torch.Tensor])
+            tuple of (s, a, r, s', done) tuples 
         """
         states, actions, rewards, next_states, dones = experiences
 
@@ -142,10 +153,12 @@ class Agent():
         """Soft update model parameters.
         θ_target = τ*θ_local + (1 - τ)*θ_target
 
-        Params
-        ======
-            local_model: PyTorch model (weights will be copied from)
-            target_model: PyTorch model (weights will be copied to)
+        Parameters
+        ----------
+        local_model : PyTorch model 
+            Weights will be copied from
+        target_model : PyTorch model
+            Weights will be copied to
         """
         for target_param, local_param in \
             zip(target_model.parameters(), local_model.parameters()):
@@ -162,7 +175,7 @@ class OUNoise:
         self.mu = config.ou_mu * np.ones(size)
         self.theta = config.ou_theta
         self.sigma = config.ou_sigma
-        random.seed(seed)
+        self.seed = np.random.seed(seed)
         self.reset()
 
     def reset(self):
@@ -173,7 +186,6 @@ class OUNoise:
         """Update internal state and return it as a noise sample."""
         x = self.state
         dx = self.theta * (self.mu - x) + self.sigma * np.random.randn(len(x))
-        ####np.array([np.random.randn() for i in range(len(x))])
         self.state = x + dx
         return self.state
 
@@ -183,13 +195,18 @@ class ReplayBuffer:
 
     def __init__(self, action_size, buffer_size, batch_size, seed, device):
         """Initialize a ReplayBuffer object.
-        Params
-        ======
-            action_size (int): >>>maximum size of buffer
-            buffer_size (int): maximum size of buffer
-            batch_size (int): size of each training batch
-            seed (int): >>>size of each training batch
-            device: >>>
+        Parameters
+        ----------
+        action_size : int 
+            Dimension of action
+        buffer_size : int 
+            Maximum size of buffer
+        batch_size : int
+            Size of each training batch
+        seed : int 
+            Seed to initialize random generator
+        device: string
+            GPU or CPU
         """
         self.action_size = action_size
         self.memory = deque(maxlen=buffer_size) # internal memory (deque)
@@ -198,7 +215,7 @@ class ReplayBuffer:
             "Experience",
             field_names=["state", "action", "reward", "next_state", "done"]
         )
-        self.seed = seed
+        self.seed = random.seed(seed)
         self.device = device
     
     def add(self, state, action, reward, next_state, done):

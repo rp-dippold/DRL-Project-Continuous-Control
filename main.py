@@ -14,7 +14,8 @@ def train_agent(watch=False):
     """Train an agent for an environment.
 
     If argument `watch` is set to 'True', the user can watch the agent during
-    training. Default is 'False'
+    training. Default is 'False'. If the training was completed successfully a
+    plot with the scores for each episode is displayed in a separate window.
 
     Parameters
     ----------
@@ -25,7 +26,7 @@ def train_agent(watch=False):
     -------
         A list of the scores of all episodes collected during training.
         If the environment was solved by the agent, its parameters
-        (state dictionar) is saved.
+        (state dictionary) is saved.
     """
     config = Config.get_config()
     
@@ -42,16 +43,15 @@ def train_agent(watch=False):
     
     # Initialize agent
     agent = Agent(state_size=state_size, 
-                  action_size=action_size)
+                  action_size=action_size,
+                  add_noise=True)
         
     # List containing scores from each episode
     scores_list = [] 
     # Queue containing the amount of scores specified by scores_window
     scores_window = deque(maxlen=config.scores_window)
-    #eps = config.epsilon_start  # initialize epsilon
-    #beta = config.beta_start    # initialize beta
     for i_episode in range(1, config.n_episodes+1):
-        # Reset the environment and agent
+        # Reset the environment and agent's noise
         env_info = env.reset(train_mode=True)[brain_name]
         agent.reset()
         # Obtain state of the initial environment
@@ -59,13 +59,13 @@ def train_agent(watch=False):
         scores = np.zeros(num_agents)
         # Play the game until it terminates (done) or at most max timesteps
         for t in range(config.max_timesteps):
-            # Get the actions for the current states from the agent
-            actions = agent.act(states, add_noise=config.add_noise)
-            # Take the next step using the received actions
+            # Get the action for the current state (for each agent)
+            actions = agent.act(states)
+            # Take the next step using the received action (for each agent)
             env_info = env.step(actions)[brain_name]
-            # Extract the next states from the environment
+            # Extract the next state from the environment (for each agent)
             next_states = env_info.vector_observations
-            # Get the rewards for the last actions
+            # Get the reward for the last action (for each agent)
             rewards = env_info.rewards
             # Find out if the game is over (True) or still running (False)
             dones = env_info.local_done
@@ -74,7 +74,8 @@ def train_agent(watch=False):
             for state, action, reward, next_state, done in \
                 zip(states, actions, rewards, next_states, dones): 
                 agent.step(state, action, reward, next_state, done)
-            # Roll over the states to next time step and update score
+            # Roll over the state to next time step and update score
+            # (for each agent)
             states = next_states
             scores += rewards
             # Exit loop if episode has finished
@@ -105,6 +106,20 @@ def train_agent(watch=False):
     return scores_list
 
 def run_model(actor_params_file, critic_params_file):
+    """Runs an agent for an environment and prints out the final score.
+
+    Depending on the value of reacher_env in config.yml an environment with
+    one or twenty agents is started and it runs for one episode. After its
+    completion the final score of each agent and the average over all agents
+    is printed out.
+
+    Parameters
+    ----------
+    actor_params_file : string
+        Name of the file that has the actor's parameters (weights) stored.
+    critic_params_file : string
+        Name of the file that has the critic's parameters (weights) stored.
+    """
     config = Config.get_config()
     env = UnityEnvironment(file_name=config.reacher_env)
     # Get the default brain
@@ -115,7 +130,8 @@ def run_model(actor_params_file, critic_params_file):
     action_size = brain.vector_action_space_size
     # Create default (untrained) agent
     agent = Agent(state_size=state_size, 
-                  action_size=action_size)
+                  action_size=action_size,
+                  add_noise=False)
     # Load trained parameters
     agent.actor_local.load_state_dict(torch.load(actor_params_file))
     agent.critic_local.load_state_dict(torch.load(critic_params_file))
@@ -149,8 +165,7 @@ def run_model(actor_params_file, critic_params_file):
 if __name__ == '__main__':
     # Process user arguments to start the requested function
     parser = argparse.ArgumentParser(
-        description="Train or run an agent to navigate in a large square \
-                     world collecting yellow bananas.")
+        description="Train or run an agent for/in the reacher environment")
     parser.add_argument('action', type=str,
                         help="Enter 'train' for agent training and 'run' for \
                               running a trained agent.")
@@ -173,7 +188,7 @@ if __name__ == '__main__':
     # Train an agent
     elif args.action == 'train':
         scores = train_agent(args.watch)
-        # Plot rewards
+        # Plot scores
         fig = plt.figure()
         ax = fig.add_subplot(111)
         plt.plot(np.arange(1, len(scores)+1), scores)
